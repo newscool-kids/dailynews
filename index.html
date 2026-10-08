@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>쿨리가 간다</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 두 화면: 도입(브랜드 띠 → 이번 주 기사 → 내 서재 책장) / 리더(진도 바 · 한 화면 한 문단 · 이전/다음). 기사 내용은 data/*.json에서 읽는다 */
+:root{
+  --paper:#ffffff;
+  --band:#f6f6f4;
+  --ink:#1e1e1e;
+  --ink-soft:#5b605c;
+  --green:#14b85a;
+  --green-deep:#0c8c43;
+  --lime:#c9e29a;
+  --cream:#fffbe5;
+  --pink:#ffd3ea;
+  --pinkline:#f19ac5;
+  --mint:#c3f1ea;
+  --sky:#cfe6ff;
+  --peach:#ffe0c2;
+  --lilac:#e6dcff;
+  --line:#2a2a2a;
+  --mute:#c4c8c3;
+  --mark:#fff19a;
+  --bad:#e0566b;
+  --bad-bg:#fde7ea;
+  --ok-bg:#e3f6d9;
+  --wood:#d9b48a;
+  --wood-dark:#a87c52;
+  --f-logo:"Jua","Noto Sans KR",sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-hand:"Gaegu","Noto Sans KR",cursive;
+  --gutter:clamp(28px,6vw,72px);
+  --col:760px;
+  --col-wide:900px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overflow:hidden}
+button{font-family:inherit;color:inherit;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px;border-radius:6px}
+.view{height:100%}
+.view[hidden]{display:none}
+
+/* ───── 로그인 ───── */
+#login{overflow-y:auto;background:var(--band);display:grid;place-items:center;padding:24px var(--gutter)}
+#login[hidden]{display:none}
+.login-card{position:relative;width:min(880px,100%);display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line);border-radius:32px;overflow:hidden;background:var(--paper)}
+@media (orientation:portrait),(max-width:760px){.login-card{grid-template-columns:1fr;width:min(560px,100%)}}
+.login-hero{position:relative;background:var(--cream);border-right:2px solid var(--line);padding:40px 34px;display:flex;flex-direction:column;justify-content:center;gap:10px;overflow:hidden}
+@media (orientation:portrait),(max-width:760px){.login-hero{border-right:0;border-bottom:2px solid var(--line);padding:30px 30px 24px;flex-direction:row;align-items:center;justify-content:space-between}}
+.login-hero .tag{margin:0;font-size:14px;font-weight:700;line-height:1.5}
+.login-hero h1{margin:0;font-family:var(--f-logo);font-weight:400;font-size:clamp(46px,6vw,60px);line-height:1.05;color:var(--green);text-shadow:0 3px 0 var(--green-deep)}
+.login-hero .hero-mascot{width:130px;height:auto;align-self:flex-end;margin:0 -36px -42px 0;transform:scaleX(-1)}
+@media (orientation:portrait),(max-width:760px){.login-hero .hero-mascot{width:92px;margin:0 -32px -26px 0;align-self:flex-end}}
+.login-hero .cloud{position:absolute;pointer-events:none}
+@media (orientation:portrait),(max-width:760px){.login-hero .cloud:first-of-type{display:none}}
+.login-form{padding:36px 34px;display:flex;flex-direction:column;gap:14px}
+.login-form h2{margin:0 0 4px;font-size:24px;font-weight:900;letter-spacing:-.02em}
+.login-form .sub{margin:-8px 0 4px;font-size:14px;color:var(--ink-soft)}
+.field label{display:block;font-size:14px;font-weight:700;margin-bottom:5px}
+.field input{display:block;width:100%;min-height:52px;border:2px solid var(--line);border-radius:14px;padding:8px 14px;font:17px var(--f-body);background:var(--paper);color:var(--ink)}
+.field input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(20,184,90,.2)}
+.form-err{margin:0;min-height:1.4em;font-size:14px;font-weight:700;color:var(--bad)}
+.login-form .btn{width:100%}
+.switch{margin:0;text-align:center;font-size:15px;color:var(--ink-soft)}
+.switch button{border:0;background:none;font:inherit;font-weight:700;color:var(--green-deep);text-decoration:underline;cursor:pointer;padding:6px}
+
+/* ───── 내 서재 ───── */
+#intro{overflow-y:auto;background:var(--paper)}
+.who{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.who b{font-size:16px}
+.logout{border:1.5px solid var(--line);border-radius:999px;background:var(--paper);font-size:14px;font-weight:700;padding:6px 14px;min-height:40px;cursor:pointer}
+.free-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:620px){.free-grid{grid-template-columns:1fr}}
+.ncard{display:flex;flex-direction:column;text-align:left;border:2px solid var(--line);border-radius:22px;overflow:hidden;background:var(--paper);cursor:pointer;padding:0;min-width:0;transition:transform .15s}
+.ncard:hover{transform:translateY(-3px)}
+.ncard img{display:block;width:100%;aspect-ratio:16/8;object-fit:cover;border-bottom:2px solid var(--line)}
+.ncard .nb{padding:12px 16px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.ncard .nmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ncard h3{margin:0;font-size:17px;font-weight:900;line-height:1.4;letter-spacing:-.02em;text-wrap:balance}
+.ncard .prog{display:flex;align-items:center;gap:8px;margin-top:auto}
+.ncard .prog .bar{flex:1;height:7px}
+.ncard .prog b{font-size:13px;color:var(--green-deep);font-variant-numeric:tabular-nums;min-width:2.8em;text-align:right}
+.pill.free{background:var(--sky)}
+.pill.sm{font-size:12px;padding:0 10px;border-width:1.5px}
+.ncard.soon{border-style:dashed;border-color:var(--mute);cursor:default;justify-content:center;align-items:center;min-height:220px;background:var(--band);color:var(--ink-soft);font-weight:700;gap:6px;text-align:center}
+.ncard.soon:hover{transform:none}
+.ncard.soon span{font-size:13px;font-weight:500}
+.lib-sec{margin-top:38px}
+.lib-sec:first-child{margin-top:0}
+.brand{background:var(--band);padding-inline:var(--gutter);border-bottom:1.5px solid var(--line);position:relative;overflow:hidden}
+.brand-in{max-width:var(--col-wide);margin:0 auto;padding-block:30px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand .tag{margin:0 0 2px;font-family:var(--f-logo);font-size:26px;line-height:1.1;color:var(--green);text-shadow:0 2px 0 var(--green-deep)}
+.brand h1{margin:0;font-size:clamp(30px,4.6vw,40px);font-weight:900;line-height:1.2;letter-spacing:-.03em}
+.brand .mascot{width:clamp(56px,8vw,76px);height:auto;flex:0 0 auto;transform:rotate(4deg)}
+.brand .cloud{position:absolute;pointer-events:none}
+.intro-in{max-width:var(--col-wide);margin:0 auto;padding-inline:var(--gutter);padding-block:30px 48px}
+@media (min-width:1000px){.intro-in{padding-inline:0}}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px}
+.sec-h h2{margin:0;font-size:22px;font-weight:900;letter-spacing:-.02em}
+.sec-h small{font-size:14px;color:var(--ink-soft);font-weight:500}
+
+.feature{display:grid;grid-template-columns:1.1fr 1fr;border:2px solid var(--line);border-radius:28px;overflow:hidden;background:var(--cream)}
+@media (orientation:portrait),(max-width:760px){.feature{grid-template-columns:1fr}}
+.feature img{display:block;width:100%;height:100%;min-height:220px;max-height:340px;object-fit:cover;border-right:2px solid var(--line)}
+@media (orientation:portrait),(max-width:760px){.feature img{border-right:0;border-bottom:2px solid var(--line);max-height:300px}}
+.feature .info{padding:24px 26px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.feature .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-block;background:var(--lime);border:2px solid var(--line);border-radius:999px;padding:1px 14px;font-weight:700;font-size:14px}
+.pill.new{background:var(--pink)}
+.feature .date{font-family:var(--f-hand);font-size:20px;font-weight:700}
+.feature h3{margin:0;font-size:clamp(22px,2.8vw,28px);font-weight:900;line-height:1.35;letter-spacing:-.02em;text-wrap:balance}
+.feature .prog{display:flex;align-items:center;gap:10px;margin-top:auto}
+.feature .prog .bar{flex:1}
+.feature .prog b{font-family:var(--f-logo);font-weight:400;font-size:22px;color:var(--green-deep);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+.start{align-self:flex-start;margin-top:6px}
+
+.shelf-wrap{margin-top:40px}
+.shelf{--rowh:190px;--plank:18px;position:relative;border:2px solid var(--line);border-radius:22px;padding:18px 22px 0;background:
+  linear-gradient(var(--paper),var(--paper)) padding-box;overflow:hidden}
+.shelf-rows{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--plank) 10px;min-height:calc(var(--rowh) + var(--plank));
+  background:repeating-linear-gradient(to bottom,transparent 0 var(--rowh),var(--wood) var(--rowh) calc(var(--rowh) + var(--plank) - 3px),var(--wood-dark) calc(var(--rowh) + var(--plank) - 3px) calc(var(--rowh) + var(--plank)));
+  margin-inline:-22px;padding-inline:22px;padding-bottom:var(--plank)}
+.slot{height:var(--rowh);display:flex;align-items:flex-end}
+.book{position:relative;width:58px;border:2px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;background:var(--c,var(--mint));cursor:pointer;display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;gap:8px;transition:transform .2s}
+.book:hover,.book:focus-visible{transform:translateY(-8px)}
+.book::before{content:"";position:absolute;left:0;right:0;top:22px;height:6px;border-block:1.5px solid var(--line);opacity:.5}
+.book .bt{writing-mode:vertical-rl;font-weight:900;font-size:16px;letter-spacing:.04em;line-height:1;margin-top:20px;flex:1;overflow:hidden;white-space:nowrap}
+.book .bd{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;text-align:center}
+.book.just{animation:shelve .7s cubic-bezier(.2,1.4,.4,1)}
+@keyframes shelve{0%{transform:translateY(-60px) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
+.ghost{width:58px;border:2px dashed var(--mute);border-bottom:0;border-radius:6px 6px 0 0}
+.shelf-empty{position:absolute;left:0;right:0;top:calc(18px + var(--rowh)/2 - 24px);text-align:center;font-size:16px;color:var(--ink-soft);pointer-events:none;padding-inline:20px}
+.shelf-empty b{color:var(--ink)}
+
+.intro-foot{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:40px}
+.load-err{border:2px dashed var(--bad);border-radius:18px;padding:18px;color:var(--bad);font-weight:700}
+
+/* ───── 리더 ───── */
+#reader{display:grid;grid-template-rows:auto 1fr auto}
+#reader[hidden]{display:none}
+.top{border-bottom:1.5px solid var(--line);background:var(--paper);padding-inline:var(--gutter)}
+.top-in{max-width:var(--col);margin:0 auto;padding-block:24px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center}
+.home{width:44px;height:44px;border:1.5px solid var(--line);border-radius:50%;background:var(--paper);display:grid;place-items:center;cursor:pointer;padding:0}
+.home svg{width:22px;height:22px}
+.steps{display:flex;gap:6px;min-width:0}
+.step{flex:1 1 0;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:3px 10px 3px 5px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
+.step .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--band);font-size:12px;flex:0 0 auto}
+.step.done .n{background:var(--green);color:#fff}
+.step[aria-current="page"]{background:var(--lime)}
+.rate{text-align:right;line-height:1.05}
+.rate b{font-family:var(--f-logo);font-weight:400;font-size:28px;color:var(--green-deep);font-variant-numeric:tabular-nums}
+.rate small{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em}
+.bar{height:8px;border:1.5px solid var(--line);border-radius:999px;background:var(--band);overflow:hidden}
+.top .bar{grid-column:1/-1}
+.bar i{display:block;height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--green) 0 8px,#2fcf72 8px 16px);transition:width .5s ease}
+
+.stage{position:relative;overflow-y:auto;padding-inline:var(--gutter)}
+.stage-in{max-width:var(--col);margin:0 auto;padding-block:26px 24px;min-height:100%;display:flex;flex-direction:column}
+.stage-in.wide{max-width:min(var(--col-wide),100%)}
+.deco{position:absolute;pointer-events:none}
+.headline{position:relative;text-align:center;margin:0 0 22px;font-size:clamp(24px,3.6vw,32px);font-weight:900;line-height:1.3;text-wrap:balance;letter-spacing:-.02em;padding-inline:50px}
+.headline::before,.headline::after{content:"";position:absolute;top:-8px;width:42px;height:28px;border:2.5px solid var(--ink);border-color:var(--ink) transparent transparent transparent;border-radius:50%}
+.headline::before{left:0;transform:rotate(-24deg)}
+.headline::after{right:0;transform:rotate(24deg)}
+
+.page{font-size:var(--fs,20px);line-height:1.9;flex:1;display:flex;flex-direction:column;justify-content:center;animation:rise .3s ease}
+@keyframes rise{from{transform:translateY(6px);opacity:.5}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.page,.book.just{animation:none}.bar i{transition:none}}
+
+.kw{display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-bottom:.6em}
+.kw small{font-family:var(--f-hand);font-weight:700;font-size:.9em;color:#8fb43a;line-height:1.2}
+.kw span{background:var(--lime);border:2px solid var(--line);border-radius:999px;padding:.1em 1.1em;font-weight:700;font-size:.85em;position:relative;line-height:1.6}
+.kw span::after{content:"";position:absolute;left:1.2em;bottom:-8px;width:11px;height:11px;background:var(--lime);border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:skewY(-35deg) rotate(-10deg)}
+.figure{position:relative}
+.figure img{display:block;width:100%;max-width:100%;height:auto;max-height:38vh;border:2px solid var(--line);border-radius:22px;object-fit:cover;object-position:center 60%}
+@media (orientation:landscape){
+  .figure img{max-height:26vh}
+  .kw{position:absolute;right:16px;top:12px;margin:0;z-index:1}
+  .kw small{background:var(--paper);border-radius:8px;padding:0 6px}
+}
+.notebook{background:var(--cream);border:2px solid var(--line);border-radius:26px;padding:1em 1.3em 1.15em;margin-top:1em}
+.notebook .date{font-family:var(--f-hand);font-size:1.15em;font-weight:700;margin:0 0 .2em;line-height:1.5}
+.notebook p{margin:0;font-family:var(--f-hand);font-size:1.08em;line-height:1.75;background:repeating-linear-gradient(transparent 0 calc(1.75em - 1px),#e8e2c4 calc(1.75em - 1px) 1.75em)}
+
+.para{border:2px solid var(--line);border-radius:24px;padding:1.3em 1.5em 1.4em;background:var(--paper)}
+.para h3{margin:0 0 .45em;font-size:1.08em;font-weight:900;letter-spacing:-.02em;line-height:1.45;padding-bottom:.45em;border-bottom:1.5px dashed var(--mute)}
+.para p{margin:0;font-size:.92em;line-height:1.95}
+.w{background:linear-gradient(transparent 55%,var(--mark) 55%);border:0;padding:0 1px;font:inherit;line-height:inherit;cursor:pointer;border-bottom:2px dotted var(--green-deep)}
+.w.seen{background:linear-gradient(transparent 55%,#dff0bf 55%)}
+.tip{margin:1.2em 0 0;font-size:.7em;color:var(--ink-soft)}
+
+.voca{position:relative;border:2px solid var(--line);border-radius:24px;padding:1.9em 1.3em 1.1em;margin-top:.7em}
+.voca .label{position:absolute;top:-.95em;left:.8em;background:var(--lime);border:2px solid var(--line);border-radius:16px 16px 16px 4px;padding:.15em .85em;font-weight:900;font-size:.8em;line-height:1.5}
+.voca .cards2{position:absolute;top:-.8em;right:1em;display:flex}
+.voca .cards2 span{display:block;background:var(--cream);border:2px solid var(--line);font-weight:900;font-size:.62em;padding:.3em .7em;line-height:1.3;transform:rotate(18deg)}
+.voca .cards2 span+span{transform:rotate(-8deg) translate(-6px,1.4em)}
+.voca h3{margin:0 0 .3em;font-size:1.2em;font-weight:900;line-height:1.4}
+.voca p{margin:0;font-size:.92em;line-height:1.9}
+.qbox{position:relative;border:2px solid var(--line);border-radius:22px;margin-top:1.3em}
+.qbox summary{list-style:none;display:flex;align-items:center;gap:.6em;min-height:56px;padding:1.1em 1.2em .8em;cursor:pointer;font-size:1em}
+.qbox summary::-webkit-details-marker{display:none}
+.qbox .badge{position:absolute;top:-1em;left:.8em;width:2.6em;height:1.8em;display:grid;place-items:center;border:2px solid var(--line);background:var(--pink);font-weight:900;font-size:.9em}
+.qbox .qtext{flex:1}
+.qbox .chev{flex:0 0 auto;width:1.8em;height:1.8em;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:50%;font-size:.8em;transition:transform .2s}
+.qbox[open] .chev{transform:rotate(180deg)}
+.ans-body{border-top:1.5px dashed var(--mute);margin:0 1.2em;padding:.7em 0 1em;display:grid;gap:.5em}
+body.measuring .ans-body{display:none}
+.ans-body p{margin:0;font-size:.9em;line-height:1.75}
+
+.quiz-h{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:.6em}
+.quiz-h h3{margin:0;font-size:1.05em;font-weight:900;line-height:1.5}
+.quiz-h .big{flex:0 0 auto;font-family:var(--f-logo);font-size:2.2em;line-height:1;color:var(--green);text-shadow:0 2px 0 var(--green-deep)}
+.quiz{background:var(--cream);border:2px solid var(--line);border-radius:24px;padding:.7em;display:grid;gap:.25em}
+.opt{display:grid;grid-template-columns:1.7em 1fr;gap:.6em;align-items:center;min-height:52px;text-align:left;border:2px solid transparent;background:transparent;border-radius:16px;padding:.4em .7em;font-size:.95em;line-height:1.55;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--line);background:var(--paper)}
+.opt .num{width:1.6em;height:1.6em;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:700;background:var(--paper);font-size:.85em}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt.wrong .num{background:var(--bad);color:#fff;border-color:var(--bad)}
+.opt.right{border-color:var(--green-deep);background:var(--ok-bg)}
+.opt.right .num{background:var(--green);color:#fff;border-color:var(--green-deep)}
+.opt:disabled{cursor:default}
+.fb{margin-top:.6em;border-radius:16px;padding:.5em .9em;border:1.5px solid var(--line);background:var(--paper);font-size:.85em;font-weight:700;line-height:1.6}
+.fb.ok{color:var(--green-deep)}
+.fb.no{color:var(--bad)}
+.note{text-align:right;font-size:.68em;color:var(--ink-soft);margin:.5em 0 0}
+
+.sum h3{display:flex;align-items:center;gap:10px;margin:0 0 .5em;font-size:1.5em;font-weight:900;color:var(--green);letter-spacing:-.02em;line-height:1.3}
+.sum-box{background:var(--band);border:2px solid var(--line);border-radius:24px;padding:1em 1.1em;display:grid;gap:.9em}
+.sum-box label{display:block;font-size:.9em;margin-bottom:.3em;line-height:1.55}
+textarea{display:block;width:100%;height:4.4em;border:1.5px solid var(--mute);border-radius:14px;padding:.5em .7em;font:.85em/1.6 var(--f-body);background:var(--paper);color:var(--ink);resize:none}
+textarea:focus{border-color:var(--green);outline:none;box-shadow:0 0 0 3px rgba(20,184,90,.18)}
+.finish{margin-top:.8em;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;border:2px dashed var(--green);border-radius:20px;padding:.5em .8em;background:#f2fbe9}
+.finish b{font-family:var(--f-logo);font-weight:400;font-size:1.2em;color:var(--green-deep)}
+.finish .btn{min-height:44px;font-size:.8em;padding:4px 18px;min-width:0}
+.copy{text-align:center;font-size:.6em;color:var(--ink-soft);margin:1em 0 0;line-height:1.6}
+
+.pager{border-top:1.5px solid var(--line);background:var(--paper);padding:18px var(--gutter) calc(24px + env(safe-area-inset-bottom,0px))}
+.pager-in{max-width:var(--col);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.btn{min-width:132px;min-height:52px;border:2px solid var(--line);border-radius:999px;padding:6px 24px;font-size:18px;font-weight:700;background:var(--paper);cursor:pointer;transition:transform .1s}
+.btn:active{transform:translateY(2px)}
+.btn.go{background:var(--lime)}
+.pager .btn:disabled{visibility:hidden}
+.pageno{font-size:15px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+
+.pop{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(460px,calc(100% - 48px));background:var(--cream);border:2px solid var(--line);border-radius:20px;padding:14px 20px 16px;z-index:40}
+.pop .t{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.pop .t b{font-size:21px;font-weight:900}
+.pop .t em{font-style:normal;font-size:12px;font-weight:700;background:var(--pink);border:1.5px solid var(--line);border-radius:999px;padding:0 8px}
+.pop p{margin:0;font-size:17px;line-height:1.6}
+.pop .x{position:absolute;top:4px;right:6px;width:40px;height:40px;border:0;background:none;font-size:26px;cursor:pointer;line-height:1}
+
+/* ───── 내 서재: 한 화면 배치 (뉴스 3칸 한 줄 + 아래 책장) ───── */
+#intro{display:flex;flex-direction:column;overflow-y:auto}
+#intro[hidden]{display:none}
+#intro .brand-in{padding-block:22px 16px}
+#intro .intro-in{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;gap:20px;padding-block:20px 14px}
+.row-labels{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:10px}
+.row-labels h2{margin:0;font-size:19px;font-weight:900;letter-spacing:-.02em}
+.news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.news-grid .ncard img{aspect-ratio:16/10;max-height:21vh}
+.news-grid .ncard h3{font-size:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:wrap}
+.news-grid .ncard .nb{padding:10px 14px 12px}
+.news-grid .ncard .date{font-size:12px;color:var(--ink-soft);font-weight:700;font-variant-numeric:tabular-nums}
+.news-grid .ncard.wk{background:var(--cream)}
+.news-grid .ncard.soon{min-height:0;height:100%}
+.shelf-wrap{flex:1;min-height:170px;display:flex;flex-direction:column;margin:0}
+.shelf-wrap .sec-h{margin-bottom:10px}
+.shelf-wrap .sec-h h2{font-size:19px}
+.shelf{--plank:16px;flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 22px 0}
+.shelf-rows{flex:1;min-height:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;align-items:stretch;gap:10px;margin-inline:-22px;padding-inline:22px;padding-bottom:var(--plank);
+  background:linear-gradient(to top,var(--wood-dark) 0 3px,var(--wood) 3px var(--plank),transparent var(--plank));scrollbar-width:none}
+.shelf-rows::-webkit-scrollbar{display:none}
+.slot{height:auto;flex:0 0 auto;display:flex;align-items:flex-end}
+.book,.ghost{max-height:196px}
+.shelf-empty{top:auto;bottom:110px}
+@media (orientation:portrait){.news-grid .ncard img{max-height:30vh;aspect-ratio:4/3}}
+.intro-foot{margin:0;font-size:11px}
+
+/* 헤더 로고, 책등 완독률, 완독 축하 창 */
+.brand h1.logo{margin:0;font-family:var(--f-logo);font-weight:400;font-size:clamp(38px,5vw,48px);line-height:1.05;color:var(--green);letter-spacing:.02em;text-shadow:0 3px 0 var(--green-deep)}
+.brand .libsub{margin:2px 0 0;font-size:15px;font-weight:700;color:var(--ink-soft)}
+.book{padding-top:6px}
+.book.reading{background:linear-gradient(to top,var(--c) var(--p),var(--paper) var(--p));border-style:dashed}
+.book .bp{position:relative;z-index:1;font-size:11px;font-weight:900;background:var(--paper);border:1.5px solid var(--line);border-radius:999px;padding:0 6px;line-height:1.5;font-variant-numeric:tabular-nums}
+.book:not(.reading) .bp{background:var(--green);color:#fff;border-color:var(--green-deep)}
+.book::before{top:32px}
+.book .bt{margin-top:10px;font-size:15px;letter-spacing:0}
+.book{min-height:124px}
+.done-wrap{position:fixed;inset:0;z-index:60;background:rgba(30,30,30,.45);display:grid;place-items:center;padding:24px}
+.done-wrap[hidden]{display:none}
+.done-card{position:relative;width:min(440px,100%);background:var(--cream);border:2px solid var(--line);border-radius:28px;padding:30px 30px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;animation:popin .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes popin{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.done-card{animation:none}}
+.done-card .avatar{width:108px;height:108px;border-radius:50%;border:2px solid var(--line);background:var(--mint);overflow:hidden;position:relative;margin-top:-4px}
+.done-card .avatar img{position:absolute;width:124px;height:auto;left:-20px;top:-34px;max-width:none}
+.done-kicker{margin:0;font-size:13px;font-weight:700;color:var(--ink-soft)}
+.done-card h2{margin:0;font-family:var(--f-logo);font-weight:400;font-size:44px;line-height:1.1;color:var(--green);text-shadow:0 3px 0 var(--green-deep)}
+.done-sub{margin:0 0 6px;font-size:16px;line-height:1.6}
+.done-bar{width:100%;height:12px;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper);margin-bottom:8px}
+.done-bar i{display:block;height:100%;width:100%;background:repeating-linear-gradient(-45deg,var(--green) 0 8px,#2fcf72 8px 16px)}
+.done-card .btn{width:100%}
+.done-stay{border:0;background:none;font:inherit;font-size:14px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;padding:8px;min-height:40px}
+.qa-stack .qbox:first-child{margin-top:1em}
+.qa-stack .qbox+.qbox{margin-top:1.6em}
+#pageHost{flex:1;display:flex;flex-direction:column}
+
+/* 원본 지면의 '쿨리가 간다' 글자(이미지)와 서재의 쿨리 */
+.brand h1.logo{text-shadow:none}
+.brand h1.logo img{display:block;height:clamp(40px,5.2vw,54px);width:auto}
+.login-hero h1{text-shadow:none}
+.login-hero h1 img{display:block;width:min(100%,300px);height:auto;margin-top:6px}
+@media (orientation:portrait),(max-width:760px){.login-hero h1 img{width:min(60vw,260px)}}
+.row-labels{align-items:end}
+.with-kooli{display:flex;align-items:flex-end;gap:8px}
+.with-kooli img{height:52px;width:auto;transform:scaleX(-1);margin-bottom:-4px}
+
+/* 얇은 책: 앞으로 계속 쌓이도록 폭을 줄이고, 제목 길이만큼 책 높이가 늘어난다 */
+.shelf-rows{gap:4px;padding-top:12px}
+.book{width:36px;min-height:0;max-height:none;height:auto;padding:6px 0 10px;gap:6px;border-radius:4px 4px 0 0}
+.book::before{top:28px;height:4px}
+.book .bp{font-size:10px;padding:0;border:0;background:none;line-height:1.4;font-weight:900}
+.book:not(.reading) .bp{width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:var(--green);color:#fff;border:1.5px solid var(--green-deep);font-size:10px;line-height:1}
+.book .bt{flex:0 0 auto;overflow:visible;margin-top:12px;font-size:13px;letter-spacing:0;line-height:1.05}
+.book:hover,.book:focus-visible{transform:translateY(-6px)}
+.ghost{width:36px;max-height:none}
+
+/* 뉴스쿨 로고 + 쿨리가 간다, 마지막 쪽의 뉴스쿨 연결 */
+.logos{display:flex;align-items:center;gap:18px}
+.ns-logo{display:block;height:clamp(50px,6.4vw,66px);width:auto}
+.ask{display:flex;align-items:center;gap:.7em;margin-top:.8em;padding:.6em .9em;border:2px solid var(--line);border-radius:18px;background:var(--lime);color:var(--ink);text-decoration:none;min-height:56px}
+.ask:active{transform:translateY(2px)}
+.ask-q{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:50%;background:var(--paper);border:2px solid var(--line);display:grid;place-items:center;font-weight:900;font-size:.95em}
+.ask-t{flex:1;display:flex;flex-direction:column;line-height:1.35}
+.ask-t b{font-size:.95em;font-weight:900}
+.ask-t small{font-size:.68em;color:var(--ink-soft);font-weight:500}
+.ask-go{font-size:1.2em;font-weight:900}
+@media (orientation:landscape){.sum-box textarea{height:3.3em}.sum-box{gap:.6em;padding:.8em 1em}.ask{margin-top:.6em;min-height:48px;padding:.4em .9em}}
+/* 모든 책은 같은 높이·같은 두께 */
+.book,.ghost{width:36px;height:min(94%,156px);min-height:0;max-height:none;flex:0 0 auto}
+.book .bt{overflow:visible;margin-top:8px;font-size:12.5px;letter-spacing:.12em}
+.book::before{top:26px}
+@media (orientation:landscape){.news-grid .ncard img{max-height:18vh}}
+.hero-ns{display:block;height:64px;width:auto;margin-bottom:16px}
+@media (orientation:portrait),(max-width:760px){.hero-ns{height:52px;margin-bottom:12px}}
+h1.logos{margin:0}
+.ncard{position:relative}
+.done-badge{position:absolute;top:10px;right:10px;z-index:1;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;border:2px solid var(--paper);display:grid;place-items:center;font-size:15px;font-weight:900}
+
+/* ───── 정리: 검은 선은 기사 속 내용 상자에만. 나머지는 연한 선과 색 면으로 구분 ───── */
+:root{--soft:#e3e3dd;--soft-2:#d3d3cc;--fill:#f1f1ec}
+.brand,.top,.pager{border-color:var(--soft)}
+.login-card{border:1px solid var(--soft)}
+.login-hero{border-color:var(--soft)!important}
+.field input{border:1.5px solid var(--soft-2)}
+.field input:focus{border-color:var(--green)}
+.ncard{border:1px solid var(--soft);border-radius:20px}
+.ncard img{border-bottom:0}
+.news-grid .ncard.wk{background:var(--cream);border-color:#efe6b8}
+.ncard.soon{border:1.5px dashed var(--soft-2)}
+.ncard .nmeta{gap:8px}
+.kwd{font-size:13px;font-weight:700;color:var(--green-deep)}
+.pill{border:0}
+.pill.sm{padding:1px 10px}
+.pill.free{background:var(--sky);color:#1d4f86}
+.pill.new{background:var(--pink);color:#8a2357}
+.bar{border:0;background:#ebebe5}
+.shelf{border:1px solid var(--soft)}
+.book{border:1px solid rgba(30,30,30,.28);border-bottom:0}
+.book.reading{border-style:solid}
+.book::before{border-color:rgba(30,30,30,.4);opacity:.4}
+.ghost{border:1.5px dashed var(--soft-2);border-bottom:0}
+.step{border:1px solid var(--soft-2)}
+.step[aria-current="page"]{border-color:transparent}
+.home,.logout{border:1px solid var(--soft-2)}
+.btn{border:0;background:var(--fill)}
+.btn.go{background:var(--green);color:#fff}
+.btn:hover{filter:brightness(.97)}
+.done-card{border:0}
+.pop{border:1px solid var(--soft-2)}
+.ask{border:0;background:var(--lime)}
+.ask-q{border:0}
+.fb{border:1px solid var(--soft-2)}
+#intro .brand .cloud{display:none}
+
+/* 제목 양옆 반원 장식 제거, 수첩 제목 옆 쿨리 얼굴 */
+.headline::before,.headline::after{display:none}
+.headline{padding-inline:0}
+.notebook .date{display:flex;align-items:center;gap:.45em}
+.nb-face{flex:0 0 auto;width:2.3em;height:2.3em;border-radius:50%;border:1.5px solid var(--line);background:var(--mint);overflow:hidden;position:relative}
+.nb-face img{position:absolute;width:3.3em;height:auto;max-width:none;left:-.2em;top:-1.25em}
+
+/* 상단 탭: 동그라미 없이, 읽은 곳만 초록 체크 */
+.step{padding:3px 12px;gap:4px}
+.step .ck{color:var(--green-deep);font-weight:900;font-size:15px;line-height:1}
+/* 수첩의 키워드 말풍선: 라벨은 또렷하게, 키워드는 차분하게 */
+.kw small{font-family:var(--f-body);font-size:.68em;font-weight:700;color:var(--green-deep);letter-spacing:.02em}
+.kw span{background:#eef6dd;border:1.5px solid rgba(30,30,30,.35);font-size:.78em;font-weight:700;color:var(--ink)}
+.kw span::after{background:#eef6dd;border-color:rgba(30,30,30,.35);border-width:0 0 1.5px 1.5px}
+@media (orientation:landscape){.kw small{background:rgba(255,255,255,.92);padding:1px 8px;border-radius:6px}}
+
+.para p+p,.voca p+p{margin-top:.55em}
+.noimg{aspect-ratio:16/10;max-height:21vh;width:100%;background:linear-gradient(135deg,#eef6dd,#fdf3d6);display:grid;place-items:center}
+@media (orientation:landscape){.noimg{max-height:18vh}}
+@media (orientation:portrait){.noimg{max-height:30vh;aspect-ratio:4/3}}
+.noimg span{font-size:20px;font-weight:900;color:var(--green-deep)}
+.figure:not(:has(img)) .kw{position:static;margin-bottom:.4em}
+
+/* 회원 번호 입장·아이 고르기 */
+#code{font-size:22px;letter-spacing:.12em;font-weight:700;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.profiles{display:grid;gap:10px}
+.kid{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;border:1px solid var(--soft-2);border-radius:16px;background:var(--paper);padding:8px 14px;font-size:18px;font-weight:700;cursor:pointer;text-align:left}
+.kid:hover{background:var(--fill)}
+.kid-face{width:40px;height:40px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-weight:900;color:var(--green-deep)}
+.add-kid{display:flex;gap:10px;align-items:flex-end}
+.add-kid .field{flex:1;min-width:0}
+.add-kid .btn{width:auto;flex:0 0 auto;min-width:92px}
+.switch button#otherCode{color:var(--ink-soft);font-weight:500}
+.kid-chip{border:0;background:var(--fill);border-radius:999px;font-size:15px;font-weight:700;padding:6px 14px;min-height:40px;cursor:pointer}
+
+/* ───── 첫 화면(입장) 새 디자인: 연한 바탕 · 왼쪽 쿨리와 로고 · 오른쪽 하얀 입장 카드 ───── */
+#login{display:block;overflow-y:auto;background:#f4f7ef;padding:0}
+.entry{min-height:100%;display:flex;flex-direction:column;padding:28px var(--gutter) 32px}
+.entry-top{max-width:980px;width:100%;margin:0 auto}
+.entry-ns{display:block;height:56px;width:auto}
+.entry-main{flex:1;max-width:980px;width:100%;margin:0 auto;display:grid;grid-template-columns:1fr minmax(340px,420px);gap:48px;align-items:center;padding-block:12px}
+.entry-hero{display:flex;flex-direction:column;gap:18px;min-width:0}
+.entry-tag{margin:0;font-size:16px;font-weight:700;color:var(--ink-soft);line-height:1.55}
+.entry-logo{margin:4px 0 6px}
+.entry-logo img{display:block;width:min(100%,340px);height:auto}
+.entry-sub{margin:0;font-size:16px;color:var(--ink-soft)}
+.entry-kooli{position:relative;width:min(100%,300px,40vh);aspect-ratio:1;display:grid;place-items:end center;margin-top:6px}
+.entry-kooli::before{content:"";position:absolute;inset:8% 4% 0;border-radius:50%;background:#e2f0cc}
+.entry-kooli img{position:relative;display:block;width:82%;height:auto}
+.entry-card{background:var(--paper);border:1px solid var(--soft);border-radius:24px;min-width:0}
+.entry-card .login-form{padding:32px 30px}
+@media (orientation:portrait),(max-width:760px){
+  .entry-main{grid-template-columns:1fr;gap:24px;align-content:center;max-width:560px}
+  .entry-hero{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
+  .entry-kooli{width:clamp(150px,30vw,220px);flex:0 0 auto;margin:0}
+  .entry-ns{height:48px}
+}
+/* 새 쿨리 그림에 맞춘 얼굴 동그라미 */
+.nb-face img{width:4em;left:-.85em;top:-.62em}
+.done-card .avatar img{width:190px;left:-41px;top:-30px}
+/* '쿨리가 간다' 글자는 이미지 대신 웹 폰트로 */
+.entry-logo{font-family:"Black Han Sans","Noto Sans KR",sans-serif;font-weight:400;font-size:clamp(54px,7.4vw,80px);line-height:1.02;color:var(--green);letter-spacing:-.01em;margin:2px 0 8px}
+@media (orientation:portrait),(max-width:760px){.entry-logo{font-size:clamp(48px,8.5vw,68px)}}
+/* 쿨리는 얼굴만 자르지 않고 전신으로 */
+.nb-kooli{flex:0 0 auto;height:2.6em;width:auto;max-width:none;margin:-.3em 0 -.2em}
+.done-kooli{display:block;height:130px;width:auto;margin-top:-6px}
+</style>
+
+<!-- 로그인 -->
+<section class="view" id="login" hidden>
+  <div class="entry">
+    <header class="entry-top"><img class="entry-ns" src="img/newschool-logo.png" alt="뉴스쿨"></header>
+    <div class="entry-main">
+      <div class="entry-hero">
+        <div class="entry-copy">
+          <p class="entry-tag">이 세상 모든 어린이의<br>궁금증이 사라지는 그날까지!</p>
+          <h1 class="entry-logo">쿨리가 간다</h1>
+        </div>
+        <div class="entry-kooli"><img src="img/cooley.png" alt="마이크를 든 쿨리"></div>
+      </div>
+      <div class="entry-card">
+<form class="login-form" id="codeForm" novalidate>
+      <h2>회원 번호로 입장</h2>
+      <p class="sub">구매 후 받은 회원 번호를 넣어 주세요.</p>
+      <div class="field"><label for="code">회원 번호</label><input id="code" name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-2345" maxlength="14"></div>
+      <p class="form-err" id="codeErr" role="alert"></p>
+      <button class="btn go" id="codeBtn" type="submit">들어가기</button>
+      <p class="switch">번호를 잃어버렸다면 구매한 곳으로 문의해 주세요.</p>
+    </form>
+    <div class="login-form" id="pickBox" hidden>
+      <h2>누가 읽나요?</h2>
+      <p class="sub">아이마다 서재가 따로 만들어져요. (최대 3명)</p>
+      <div class="profiles" id="profiles"></div>
+      <form class="add-kid" id="addKid" novalidate>
+        <div class="field"><label for="kidName">아이 별명</label><input id="kidName" maxlength="8" autocomplete="off" placeholder="예: 쿨리"></div>
+        <button class="btn" type="submit" id="addBtn">추가</button>
+      </form>
+      <p class="form-err" id="pickErr" role="alert"></p>
+      <p class="switch"><button type="button" id="otherCode">다른 회원 번호로 들어가기</button></p>
+    </div>
+  </div>
+    </div>
+  </div>
+</section>
+
+<!-- 내 서재 -->
+<section class="view" id="intro" hidden>
+  <header class="brand">
+    <div class="brand-in">
+      <div>
+        <h1 class="logos"><img class="ns-logo" src="img/newschool-logo.png" alt="뉴스쿨"></h1>
+      </div>
+      <div class="who"><button class="kid-chip" id="kidChip" aria-label="읽는 아이 바꾸기"></button><button class="logout" id="logout">나가기</button></div>
+    </div>
+  </header>
+
+  <div class="intro-in">
+    <div class="news-row">
+      <div class="row-labels"><h2>무료로 읽을 수 있는 뉴스</h2><h2>이번 주 새 뉴스</h2></div>
+      <div class="news-grid" id="newsGrid"><div class="ncard soon">뉴스를 불러오는 중…</div></div>
+    </div>
+    <section class="shelf-wrap">
+      <div class="sec-h"><h2>내가 읽은 뉴스</h2><small id="shelfCount"></small></div>
+      <div class="shelf"><div class="shelf-rows" id="shelfRows"></div><p class="shelf-empty" id="shelfEmpty" hidden></p></div>
+    </section>
+    <p class="intro-foot">ⓒ뉴스쿨은 저작권법에 따라 보호를 받는 저작물이므로 무단 전재와 복제를 금합니다.</p>
+  </div>
+</section>
+
+<!-- 리더 -->
+<section class="view" id="reader" hidden>
+  <nav class="top" aria-label="학습 순서">
+    <div class="top-in">
+      <button class="home" id="home" aria-label="서재로 돌아가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5a1 1 0 0 1 1-1h3v15H5a1 1 0 0 1-1-1z"/><path d="M8 4h4v15H8z"/><path d="M14.5 5.2l3-.8a1 1 0 0 1 1.2.7l3 11.6a1 1 0 0 1-.7 1.2l-3 .8z"/><path d="M3 20h18"/></svg></button>
+      <div class="steps" id="steps"></div>
+      <div class="rate"><b id="rateNum">0%</b><small>완독률</small></div>
+      <div class="bar" role="progressbar" aria-label="완독률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar"><i id="barFill"></i></div>
+    </div>
+  </nav>
+  <main class="stage" id="stage">
+    <div class="stage-in" id="stageIn">
+      <h2 class="headline" id="headline"></h2>
+      <div id="pageHost"></div>
+    </div>
+  </main>
+  <div class="pager">
+    <div class="pager-in">
+      <button class="btn" id="prev">← 이전</button>
+      <span class="pageno" id="pageno"></span>
+      <button class="btn go" id="next">다음 →</button>
+    </div>
+  </div>
+</section>
+
+<div class="done-wrap" id="doneModal" hidden role="dialog" aria-modal="true" aria-labelledby="doneTitle">
+  <div class="done-card">
+    <img class="done-kooli" src="img/cooley.png" alt="">
+    <p class="done-kicker" id="doneDate"></p>
+    <h2 id="doneTitle">완독했어요!</h2>
+    <p class="done-sub" id="doneSub"></p>
+    <div class="done-bar"><i></i></div>
+    <button class="btn go" id="doneHome">내 서재로 돌아가기</button>
+    <button class="done-stay" id="doneStay">이 화면에 더 있을래요</button>
+  </div>
+</div>
+
+<div class="pop" id="pop" hidden role="dialog" aria-live="polite">
+  <button class="x" id="popX" aria-label="닫기">×</button>
+  <div class="t"><b id="popW"></b><em id="popPos"></em></div>
+  <p id="popD"></p>
+</div>
+
+<script>
+const COLORS=["mint","pink","lime","sky","peach","lilac","cream"];
+const MAX_FS=21, MIN_FS=14;
+const KEY="cooley-library-v1";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* {{낱말}} 또는 {{사전표제어|화면에 보일 글}} → 뜻풀이 버튼 */
+const marks=s=>esc(s).replace(/\{\{([^|}]+)(?:\|([^}]+))?\}\}/g,(_,k,t)=>`<button class="w" data-w="${k}">${t||k}</button>`);
+
+/* ───── 회원 번호 입장 ─────
+   구매자에게 발급한 회원 번호를 data/codes.json의 해시 목록과 대조한다(번호 원문은 공개 파일에 두지 않음).
+   기록은 이 기기에 "번호(해시) + 아이 프로필" 단위로 저장한다. 나중에 저장소(Firebase)를 붙이면
+   loadLib/saveLib와 프로필 저장만 서버 호출로 바꾸면 된다. */
+const SALT="newscool-daily:v1:";
+const SES_KEY="nd-session-v1";
+const store={ get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+              set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } } };
+async function sha(text){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+const normCode=c=>String(c).toUpperCase().replace(/[^A-Z0-9]/g,"");
+let CODES=null;
+async function loadCodes(){ if(!CODES){ const j=await getJSON("data/codes.json"); CODES=new Set(j.codes||[]); } return CODES; }
+const AUTH={
+  h:null, kid:null,
+  async enter(raw){
+    const n=normCode(raw); if(n.length<8) throw new Error("회원 번호 8자리를 모두 넣어 주세요.");
+    let set; try{ set=await loadCodes(); }catch(e){ throw new Error("번호를 확인하지 못했어요. 인터넷 연결을 확인해 주세요."); }
+    const h=await sha(SALT+n);
+    if(!set.has(h)) throw new Error("등록되지 않은 번호예요. 받은 번호를 다시 확인해 주세요.");
+    this.h=h; this.kid=null; store.set(SES_KEY,{h});
+  },
+  async restore(){
+    const ses=store.get(SES_KEY,null); if(!ses||!ses.h) return false;
+    try{ const set=await loadCodes(); if(!set.has(ses.h)){ store.set(SES_KEY,null); return false; } }catch(e){ /* 오프라인이면 일단 통과 */ }
+    this.h=ses.h; this.kid=ses.kid||null; return true;
+  },
+  kids(){ return store.get("nd-kids:"+this.h,[]); },
+  saveKids(k){ store.set("nd-kids:"+this.h,k); },
+  pick(id){ this.kid=id; store.set(SES_KEY,{h:this.h,kid:id}); },
+  leave(){ this.h=null; this.kid=null; store.set(SES_KEY,null); }
+};
+
+let LIB={};               // 지금 읽는 아이의 기록: {issueId:{page,read,quiz,right,seen,sum,done,doneAt}}
+const libKey=()=>"nd-lib:"+AUTH.h+":"+AUTH.kid;
+const loadLib=()=>{ LIB=store.get(libKey(),{})||{}; };
+const saveLib=()=>{ if(AUTH.h&&AUTH.kid) store.set(libKey(),LIB); };
+const rec=id=>LIB[id]||(LIB[id]={page:0,read:{},quiz:null,right:false,seen:{},sum:{},done:false});
+
+let INDEX=[], FREE=[], THIS_WEEK=null;
+let ISSUE=null, PAGES=[], TABS=[], S=null, justShelved=null;
+const cache={};
+
+async function getJSON(url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function loadIssue(meta){ if(!cache[meta.id]) cache[meta.id]=await getJSON(meta.file); return cache[meta.id]; }
+const metaOf=id=>INDEX.find(m=>m.id===id);
+
+function pctOf(m){
+  const r=LIB[m.id]; if(!r) return 0; if(r.done) return 100; if(!m.pages) return 0;
+  return Math.min(100,Math.round((Object.keys(r.read).length+(r.right?1:0))/(m.pages+1)*100));
+}
+
+/* ───── 입장 화면 ───── */
+const KID_MAX=3;
+function showCode(){ $("codeForm").hidden=false; $("pickBox").hidden=true; $("codeErr").textContent=""; showView("login"); setTimeout(()=>$("code").focus(),50); }
+function showPick(){
+  $("codeForm").hidden=true; $("pickBox").hidden=false; $("pickErr").textContent="";
+  const kids=AUTH.kids(), box=$("profiles");
+  box.innerHTML=kids.map(k=>`<button class="kid" data-kid="${esc(k.id)}"><span class="kid-face">${esc(k.name.slice(0,1))}</span><span>${esc(k.name)}</span></button>`).join("")||'<p class="sub" style="margin:0">아직 등록한 아이가 없어요. 아래에서 별명을 추가해 주세요.</p>';
+  box.querySelectorAll("[data-kid]").forEach(b=>b.onclick=()=>{ AUTH.pick(b.dataset.kid); enterLibrary(); });
+  $("addKid").hidden=kids.length>=KID_MAX;
+  showView("login");
+}
+$("code").addEventListener("input",e=>{
+  $("codeErr").textContent="";
+  const n=normCode(e.target.value).slice(0,8); e.target.value=n.length>4?n.slice(0,4)+"-"+n.slice(4):n;
+});
+$("codeForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const btn=$("codeBtn"); btn.disabled=true;
+  try{ await AUTH.enter($("code").value); $("codeForm").reset(); showPick(); }
+  catch(x){ $("codeErr").textContent=x.message; }
+  btn.disabled=false;
+});
+$("kidName").addEventListener("input",()=>$("pickErr").textContent="");
+$("addKid").addEventListener("submit",e=>{
+  e.preventDefault(); const name=$("kidName").value.trim();
+  if(!name){ $("pickErr").textContent="아이 별명을 넣어 주세요."; $("kidName").focus(); return; }
+  const kids=AUTH.kids();
+  if(kids.length>=KID_MAX){ $("pickErr").textContent="아이는 3명까지 등록할 수 있어요."; return; }
+  if(kids.some(k=>k.name===name)){ $("pickErr").textContent="같은 별명이 이미 있어요."; return; }
+  kids.push({id:"k"+Date.now().toString(36),name}); AUTH.saveKids(kids); $("kidName").value=""; showPick();
+});
+$("otherCode").onclick=()=>{ AUTH.leave(); LIB={}; showCode(); };
+$("logout").onclick=()=>{ AUTH.leave(); LIB={}; showCode(); };
+$("kidChip").onclick=()=>{ showPick(); };
+
+function enterLibrary(){ loadLib(); const k=AUTH.kids().find(x=>x.id===AUTH.kid); $("kidChip").textContent=k?k.name+" ▾":"아이 고르기"; showView("intro"); renderIntro(); $("intro").scrollTop=0; }
+
+/* ───── 내 서재 ───── */
+function newsCard(m,tag,cls){
+  const p=pctOf(m), r=LIB[m.id];
+  const state=r&&r.done?"":(p===0&&cls?'<span class="pill sm new">NEW</span>':"");
+  return `<button class="ncard ${cls||""}" data-open="${esc(m.id)}" aria-label="${esc(m.title)} 읽기">
+    ${m.image?`<img src="${esc(m.image)}" alt="">`:`<div class="noimg"><span>${esc(m.keyword)}</span></div>`}
+    <div class="nb">
+      <div class="nmeta">${tag}<span class="kwd">#${esc(m.keyword)}</span></div>
+      <h3>${esc(m.title)}</h3>
+      <div class="prog"><div class="bar"><i style="width:${p}%"></i></div><b>${p}%</b></div>
+    </div></button>`;
+}
+function renderIntro(){
+  const grid=$("newsGrid");
+  if(!INDEX.length){ grid.innerHTML=`<div class="load-err" style="grid-column:1/-1">뉴스를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</div>`; }
+  else{
+    const free=FREE.map(metaOf).filter(Boolean).slice(0,2);
+    let h=free.map(m=>newsCard(m,'<span class="pill sm free">무료</span>')).join("");
+    for(let i=free.length;i<2;i++) h+=`<div class="ncard soon">곧 공개될 무료 뉴스<span>준비되면 여기에 올라와요</span></div>`;
+    const wk=metaOf(THIS_WEEK)||INDEX[0];
+    h+=newsCard(wk,'<span class="pill sm new">이번 주</span>',"wk");
+    grid.innerHTML=h;
+  }
+  // 내가 읽은 뉴스: 완독한 책 먼저, 그다음 읽는 중인 책. 책등에 완독률을 채워서 보여 준다
+  const started=INDEX.filter(m=>LIB[m.id]&&(LIB[m.id].done||Object.keys(LIB[m.id].read).length));
+  const done=started.filter(m=>LIB[m.id].done).sort((a,b)=>(LIB[a.id].doneAt||0)-(LIB[b.id].doneAt||0));
+  const reading=started.filter(m=>!LIB[m.id].done);
+  const rows=$("shelfRows"); rows.innerHTML="";
+  [...done,...reading].forEach((m,i)=>{
+    const p=pctOf(m), full=p>=100;
+    const slot=document.createElement("div"); slot.className="slot";
+    const h=82+((m.id.length*7+i*13)%14);
+    slot.innerHTML=`<button class="book${full?"":" reading"}${m.id===justShelved?" just":""}" data-open="${esc(m.id)}" style="--c:var(--${COLORS.includes(m.color)?m.color:COLORS[i%COLORS.length]});--p:${p}%" aria-label="${esc(m.title)} ${full?"완독":"완독률 "+p+"%"}"><span class="bp">${full?"✓":p+"%"}</span><span class="bt">${esc(m.shortTitle||m.keyword)}</span></button>`;
+    rows.appendChild(slot);
+  });
+  if(!started.length){ for(let i=0;i<4;i++){ const s=document.createElement("div"); s.className="slot"; s.innerHTML=`<div class="ghost"></div>`; rows.appendChild(s);} }
+  $("shelfEmpty").hidden=started.length>0;
+  $("shelfCount").textContent=started.length?`완독 ${done.length}권 · 읽는 중 ${reading.length}권`:"";
+  justShelved=null;
+  requestAnimationFrame(fitSpines);
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-open]"); if(b) openIssue(b.dataset.open); });
+
+function showView(name){ ["login","intro","reader"].forEach(v=>$(v).hidden=v!==name); pop.hidden=true; $("doneModal").hidden=true; }
+
+/* ───── 리더 ───── */
+async function openIssue(id){
+  const meta=INDEX.find(m=>m.id===id); if(!meta) return;
+  let data; try{ data=await loadIssue(meta); }catch(e){ alertBox("기사 파일을 열지 못했어요. 새로고침 후 다시 눌러 주세요."); return; }
+  ISSUE=data; S=rec(id); buildPages(); meta.pages=PAGES.length;
+  if(S.page>=PAGES.length) S.page=0;
+  showView("reader"); renderReader(); $("stage").scrollTop=0;
+}
+function alertBox(msg){ $("newsGrid").insertAdjacentHTML("beforeend",`<div class="load-err" style="grid-column:1/-1">${esc(msg)}</div>`); }
+
+const paras=t=>String(t).split(/\n+/).map(p=>`<p>${marks(p)}</p>`).join("");
+const qaList=d=>!d.qa?[]:(Array.isArray(d.qa)?d.qa:[d.qa]);
+const qaHTML=d=>qaList(d).map(q=>`<details class="qbox"><summary><span class="badge">Q</span><span class="qtext">${esc(q.q)}</span><span class="chev" aria-hidden="true">▾</span></summary><div class="ans-body">${q.a.map(p=>`<p>${marks(p)}</p>`).join("")}</div></details>`).join("");
+const pageCount=d=>d.article.length+4+(d.qaPage&&qaList(d).length?1:0);
+function buildPages(){
+  const d=ISSUE; PAGES=[];
+  PAGES.push({tab:0,html:`<div class="figure"><div class="kw"><small>오늘 뉴스의 키워드</small><span>${esc(d.keyword)}</span></div>${d.image?`<img src="${esc(d.image)}" alt="${esc(d.imageAlt||"")}">`:""}</div>
+    <div class="notebook"><p class="date"><img class="nb-kooli" src="img/cooley.png" alt="">쿨리의 취재 수첩</p><p>${marks(d.notebook)}</p></div>`});
+  d.article.forEach((a,i)=>PAGES.push({tab:1,html:`<div class="para">${a.heading?`<h3>${esc(a.heading)}</h3>`:""}${paras(a.text)}</div>${i===0?'<p class="tip">형광펜 친 낱말을 누르면 뜻이 나와요.</p>':""}`}));
+  PAGES.push({tab:2,wide:true,html:`<div class="voca"><span class="label">${esc(d.voca.label||"뉴스 키워드")}</span><span class="cards2" aria-hidden="true"><span>NEWS</span><span>VOCA</span></span><h3>${esc(d.voca.title)}</h3>${paras(d.voca.text)}</div>${d.qaPage?"":qaHTML(d)}`});
+  if(d.qaPage&&qaList(d).length) PAGES.push({tab:2,html:`<div class="qa-stack">${qaHTML(d)}</div>`});
+  PAGES.push({tab:3,html:`<div class="quiz-h"><h3>Q. ${esc(d.quiz.q)}</h3></div>
+    <div class="quiz">${d.quiz.options.map((o,j)=>`<button class="opt" data-o="${j+1}"><span class="num">${j+1}</span><span>${esc(o)}</span></button>`).join("")}</div>
+    <div class="fb" id="fb" hidden></div>${d.quiz.note?`<p class="note">${esc(d.quiz.note)}</p>`:""}`});
+  PAGES.push({tab:4,html:`<div class="sum"><h3><svg width="36" height="27" viewBox="0 0 34 26" aria-hidden="true"><path d="M2 4h12c2 0 3 1 3 3v17c0-2-1-3-3-3H2zM32 4H20c-2 0-3 1-3 3v17c0-2 1-3 3-3h12z" fill="var(--paper)" stroke="var(--line)" stroke-width="1.6"/><path d="M5 9h8M5 13h8M5 17h8M21 9h8M21 13h8M21 17h8" stroke="var(--line)" stroke-width="1.2"/></svg>${esc(d.summaryTitle||"내용 정리하기")}</h3>
+    <div class="sum-box">${d.summary.map((q,j)=>`<div><label for="s${j}">${esc(q)}</label><textarea id="s${j}" data-sum="${j}"></textarea></div>`).join("")}</div></div>
+    <div class="finish" id="finish" hidden><b>완독했어요!</b><button class="btn go" id="toShelf">내 서재로 돌아가기</button></div>
+    ${d.link?`<a class="ask" href="${esc(d.link)}" target="_blank" rel="noopener"><span class="ask-q">?</span><span class="ask-t"><b>모르는 단어 뉴스쿨에 물어보기</b><small>뉴스쿨 홈페이지의 이 기사로 이동해요</small></span><span class="ask-go" aria-hidden="true">↗</span></a>`:""}
+    <p class="copy">ⓒ뉴스쿨은 저작권법에 따라 보호를 받는 저작물이므로 무단 전재와 복제를 금합니다.</p>`});
+  const names=["취재수첩","기사","키워드","퀴즈","정리"];
+  TABS=names.map((n,t)=>({name:n,pages:PAGES.map((p,i)=>p.tab===t?i:-1).filter(i=>i>=0),quiz:t===3}));
+  $("headline").textContent=d.title;
+}
+
+/* 한 쪽이 스크롤 없이 들어가는 가장 큰 글자 크기 */
+function fitSize(page){
+  const stage=$("stage");
+  let fs=MAX_FS; page.style.setProperty("--fs",fs+"px");
+  while(fs>MIN_FS && stage.scrollHeight>stage.clientHeight+1){ fs-=0.5; page.style.setProperty("--fs",fs+"px"); }
+  return fs;
+}
+/* 기사 쪽들은 모두 같은 글자 크기: 기사 쪽마다 맞는 크기를 재서 가장 작은 값으로 통일 */
+let articleFs={key:"",fs:MAX_FS};
+function articleSize(){
+  const stage=$("stage"), key=ISSUE.id+"|"+stage.clientWidth+"x"+stage.clientHeight;
+  if(articleFs.key===key) return articleFs.fs;
+  const host=$("pageHost"), keep=host.innerHTML; let min=MAX_FS;
+  PAGES.forEach(p=>{ if(p.tab!==1) return; host.innerHTML=`<section class="page">${p.html}</section>`; min=Math.min(min,fitSize(host.firstElementChild)); });
+  host.innerHTML=keep; wirePage();
+  articleFs={key,fs:min}; return min;
+}
+function fit(){
+  const page=$("pageHost").firstElementChild; if(!page) return;
+  document.body.classList.add("measuring");
+  const cap=articleSize(), cur=$("pageHost").firstElementChild;
+  if(PAGES[S.page].tab===1) cur.style.setProperty("--fs",cap+"px");
+  else { const fs=Math.min(fitSize(cur),cap); cur.style.setProperty("--fs",fs+"px"); }
+  document.body.classList.remove("measuring");
+}
+
+function renderReader(){
+  S.read[S.page]=true;
+  const total=PAGES.length+1, done=Object.keys(S.read).length+(S.right?1:0);
+  const pct=Math.min(100,Math.round(done/total*100));
+  let celebrate=false;
+  if(pct===100&&!S.done){ S.done=true; S.doneAt=Date.now(); justShelved=ISSUE.id; celebrate=true; }
+  $("rateNum").textContent=pct+"%"; $("barFill").style.width=pct+"%"; $("bar").setAttribute("aria-valuenow",pct);
+  // 탭
+  const st=$("steps"); st.innerHTML="";
+  TABS.forEach((t,i)=>{
+    const ok=t.quiz?S.right:t.pages.every(p=>S.read[p]);
+    const b=document.createElement("button"); b.className="step"+(ok?" done":"");
+    b.innerHTML=`${ok?'<span class="ck" aria-hidden="true">✓</span>':""}${t.name}`;
+    if(t.pages.includes(S.page)) b.setAttribute("aria-current","page");
+    b.onclick=()=>{ if(!t.pages.includes(S.page)) go(t.pages.find(p=>!S.read[p])??t.pages[0]); };
+    st.appendChild(b);
+  });
+  // 페이지
+  const P=PAGES[S.page];
+  $("stageIn").classList.toggle("wide",!!P.wide);
+  $("pageHost").innerHTML=`<section class="page">${P.html}</section>`;
+  wirePage();
+  $("pageno").textContent=`${S.page+1} / ${PAGES.length}`;
+  $("prev").disabled=S.page===0; $("next").disabled=S.page===PAGES.length-1;
+  saveLib(); fit();
+  if(celebrate) showDone();
+}
+function wirePage(){
+  document.querySelectorAll("#pageHost .w").forEach(w=>{
+    w.classList.toggle("seen",!!S.seen[w.dataset.w]);
+    w.onclick=()=>{ const k=w.dataset.w, v=(ISSUE.vocab||{})[k]; if(!v) return;
+      $("popW").textContent=k; $("popPos").textContent=v.pos||""; $("popD").textContent=v.d; pop.hidden=false; S.seen[k]=true; w.classList.add("seen"); saveLib(); };
+  });
+  document.querySelectorAll("#pageHost details.qbox").forEach(ans=>ans.addEventListener("toggle",()=>{ if(ans.open) setTimeout(()=>ans.scrollIntoView({behavior:"smooth",block:"nearest"}),50); }));
+  const opts=document.querySelectorAll("#pageHost .opt");
+  if(opts.length){ paintQuiz(); opts.forEach(o=>o.onclick=()=>{ if(S.right) return; S.quiz=+o.dataset.o; if(S.quiz===ISSUE.quiz.answer) S.right=true; renderReader(); }); }
+  document.querySelectorAll("#pageHost [data-sum]").forEach(t=>{ t.value=S.sum[t.dataset.sum]||""; t.oninput=()=>{ S.sum[t.dataset.sum]=t.value; saveLib(); }; });
+  const fin=$("finish"); if(fin){ fin.hidden=!S.done; $("toShelf").onclick=()=>goHome(); }
+}
+function paintQuiz(){
+  const q=ISSUE.quiz, fb=$("fb");
+  document.querySelectorAll("#pageHost .opt").forEach(o=>{ const n=+o.dataset.o; o.disabled=S.right;
+    o.classList.toggle("right",S.right&&n===q.answer); o.classList.toggle("wrong",!S.right&&S.quiz===n); });
+  if(S.right){ fb.hidden=false; fb.className="fb ok"; fb.textContent=q.right||"정답이야!"; }
+  else if(S.quiz){ fb.hidden=false; fb.className="fb no"; fb.textContent=q.wrong||"다시 생각해 봐!"; }
+  else fb.hidden=true;
+}
+function showDone(){
+  $("doneDate").textContent="쿨리가 간다";
+  $("doneSub").textContent=`'${ISSUE.shortTitle||ISSUE.keyword}' 이야기를 끝까지 읽었어요. 서재에 책이 꽂혔어요.`;
+  $("doneModal").hidden=false; setTimeout(()=>$("doneHome").focus(),50);
+}
+$("doneHome").onclick=()=>{ $("doneModal").hidden=true; goHome(); };
+$("doneStay").onclick=()=>{ $("doneModal").hidden=true; };
+function go(i){ if(i<0||i>=PAGES.length||i===S.page) return; S.page=i; pop.hidden=true; renderReader(); $("stage").scrollTop=0; }
+function goHome(){
+  const fresh=!!justShelved; showView("intro"); renderIntro();
+  if(fresh) setTimeout(()=>document.querySelector(".shelf-wrap").scrollIntoView({behavior:"smooth",block:"center"}),80); else $("intro").scrollTop=0;
+}
+$("prev").onclick=()=>go(S.page-1);
+$("next").onclick=()=>go(S.page+1);
+$("home").onclick=()=>goHome();
+
+let sx=null,sy=null; const stage=$("stage");
+stage.addEventListener("touchstart",e=>{ if(e.target.closest("textarea")){sx=null;return;} sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+stage.addEventListener("touchend",e=>{ if(sx===null) return; const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6) go(S.page+(dx<0?1:-1)); sx=null; },{passive:true});
+
+const pop=$("pop");
+$("popX").onclick=()=>pop.hidden=true;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") pop.hidden=true; });
+/* 책등 제목이 길면 책 안에 들어갈 때까지 글자를 줄인다 */
+function fitSpines(){
+  document.querySelectorAll(".book .bt").forEach(t=>{
+    const book=t.parentElement; let fs=12.5; t.style.fontSize=fs+"px";
+    while(fs>7 && t.getBoundingClientRect().bottom>book.getBoundingClientRect().bottom-8){ fs-=0.5; t.style.fontSize=fs+"px"; }
+  });
+}
+let rt; window.addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(()=>{ if(!$("reader").hidden) fit(); else if(!$("intro").hidden) fitSpines(); },120); });
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ if(!$("reader").hidden) fit(); });
+document.addEventListener("load",e=>{ if(e.target.tagName==="IMG"&&!$("reader").hidden) fit(); },true);
+
+/* 시작: 뉴스 목록을 읽고, 입장 상태를 확인한 뒤 각 뉴스의 페이지 수를 읽는다 */
+(async()=>{
+  try{ const j=await getJSON("data/issues.json"); INDEX=j.issues||[]; FREE=j.free||[]; THIS_WEEK=j.thisWeek||(INDEX[0]&&INDEX[0].id); }catch(e){ INDEX=[]; }
+  if(await AUTH.restore()){ if(AUTH.kid&&AUTH.kids().some(k=>k.id===AUTH.kid)) enterLibrary(); else showPick(); } else showCode();
+  await Promise.all(INDEX.map(async m=>{ try{ const d=await loadIssue(m); m.pages=pageCount(d); }catch(e){} }));
+  if(!$("intro").hidden) renderIntro();
+})();
+</script>
+
+</body>
+</html>

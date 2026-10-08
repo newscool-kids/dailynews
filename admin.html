@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>회원 번호 관리</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 관리자 한 명이 쓰는 표 중심 화면: 위 요약·도구, 아래 번호 표 */
+:root{
+  --paper:#ffffff; --band:#f6f6f4; --ink:#1e1e1e; --ink-soft:#5b605c;
+  --green:#14b85a; --green-deep:#0c8c43; --soft:#e3e3dd; --soft-2:#d3d3cc; --fill:#f1f1ec;
+  --warn:#b26b00; --warn-bg:#fff4dc; --bad:#c2384d; --bad-bg:#fde7ea; --ok-bg:#e3f6d9;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--band);color:var(--ink);font:15px/1.6 var(--f)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:28px 60px}
+h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-.02em}
+.lead{margin:4px 0 0;color:var(--ink-soft)}
+.panel{background:var(--paper);border:1px solid var(--soft);border-radius:18px;padding:18px 20px;margin-top:18px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.stat{background:var(--paper);border:1px solid var(--soft);border-radius:14px;padding:10px 16px;min-width:110px}
+.stat small{display:block;color:var(--ink-soft);font-size:12px;font-weight:700}
+.stat b{font-size:22px;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row+ .row{margin-top:12px}
+label{font-weight:700;font-size:14px}
+input[type=number],input[type=search],input.memo{border:1px solid var(--soft-2);border-radius:10px;padding:8px 12px;background:var(--paper);min-height:42px}
+input[type=number]{width:90px}
+input[type=search]{flex:1;min-width:200px}
+.btn{border:0;border-radius:999px;padding:8px 18px;min-height:42px;font-weight:700;background:var(--fill);cursor:pointer}
+.btn.go{background:var(--green);color:#fff}
+.btn.sm{min-height:34px;padding:4px 12px;font-size:13px}
+.btn:hover{filter:brightness(.96)}
+.hint{margin:10px 0 0;font-size:13px;color:var(--ink-soft)}
+.alert{margin-top:14px;padding:10px 14px;border-radius:12px;background:var(--warn-bg);color:var(--warn);font-size:14px;font-weight:700}
+.alert[hidden]{display:none}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px}
+.toast[hidden]{display:none}
+.table-wrap{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--soft);vertical-align:middle}
+th{font-size:12px;color:var(--ink-soft);font-weight:700;letter-spacing:.03em}
+td.code{font-weight:900;letter-spacing:.08em;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.date{font-variant-numeric:tabular-nums;color:var(--ink-soft);white-space:nowrap;font-size:13px}
+input.memo{width:100%;min-height:36px;padding:4px 10px}
+.st{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.st.new{background:var(--fill);color:var(--ink-soft)}
+.st.sent{background:var(--ok-bg);color:var(--green-deep)}
+.st.off{background:var(--bad-bg);color:var(--bad)}
+tr.off td.code{color:var(--bad);text-decoration:line-through}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.empty{padding:28px;text-align:center;color:var(--ink-soft)}
+.steps{margin:0;padding-left:20px;color:var(--ink-soft);font-size:14px}
+.steps b{color:var(--ink)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>회원 번호 관리</h1>
+  <p class="lead">구매자에게 줄 회원 번호를 만들고, 누구에게 보냈는지 기록합니다. 이 화면의 기록은 <b>지금 쓰는 브라우저에만</b> 저장되니 백업을 꼭 해 두세요.</p>
+
+  <div class="stats" id="stats"></div>
+  <p class="alert" id="dirty" hidden>번호를 새로 만들었거나 사용 중지한 뒤 아직 '번호 목록 파일'을 저장하지 않았어요. 저장해서 앱의 data 폴더에 올려야 앱에 반영돼요.</p>
+
+  <section class="panel">
+    <div class="row">
+      <label for="count">새 번호</label>
+      <input id="count" type="number" min="1" max="500" value="20">
+      <span>개</span>
+      <button class="btn go" id="gen">번호 만들기</button>
+      <button class="btn" id="nextCopy">다음 미발급 번호 발급하기</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="saveCodes">번호 목록 파일 저장 (codes.json)</button>
+      <button class="btn" id="saveCsv">백업 저장 (CSV)</button>
+      <button class="btn" id="loadCsvBtn">백업 불러오기</button>
+      <input id="loadCsv" type="file" accept=".csv,text/csv" hidden>
+    </div>
+    <ol class="steps hint">
+      <li><b>번호 만들기</b>로 번호를 미리 넉넉히 만듭니다.</li>
+      <li><b>번호 목록 파일 저장</b>을 눌러 받은 <b>codes.json</b>을 깃허브 저장소의 <b>data</b> 폴더에 덮어 올립니다. 미발급 번호도 미리 포함되니, 번호를 만들 때만 한 번 올리면 됩니다.</li>
+      <li>구매가 들어오면 <b>다음 미발급 번호 발급하기</b>를 누르고, 복사된 번호를 구매자에게 보낸 뒤 메모 칸에 구매자를 적습니다.</li>
+      <li>번호가 공유된 것 같으면 <b>사용 중지</b> 후 번호 목록 파일을 다시 저장해 올립니다.</li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <div class="row">
+      <input id="q" type="search" placeholder="번호나 메모로 찾기" aria-label="번호나 메모로 찾기">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>회원 번호</th><th>상태</th><th style="width:34%">메모(구매자)</th><th>발급일</th><th>동작</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+const SALT="newscool-daily:v1:";            /* 앱(index.html)과 같아야 함 */
+const KEY="nd-admin-v1";
+const ALPHA="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; /* 헷갈리는 O·0·I·1 제외 */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let D={codes:[],dirty:false};
+try{ D=Object.assign(D,JSON.parse(localStorage.getItem(KEY))||{}); }catch(e){}
+const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(D)); }catch(e){ toast("이 브라우저에 저장하지 못했어요. 백업을 저장해 주세요."); } };
+const fmt=c=>c.slice(0,4)+"-"+c.slice(4);
+const today=()=>new Date().toISOString().slice(0,10);
+function toast(m){ const t=$("toast"); t.textContent=m; t.hidden=false; clearTimeout(t._t); t._t=setTimeout(()=>t.hidden=true,2200); }
+async function copy(text){
+  try{ await navigator.clipboard.writeText(text); toast(text+" 복사했어요"); }
+  catch(e){ toast("복사하지 못했어요. 번호를 직접 선택해 복사해 주세요."); }
+}
+function rand8(){
+  const a=new Uint32Array(8); crypto.getRandomValues(a);
+  return [...a].map(n=>ALPHA[n%ALPHA.length]).join("");
+}
+async function sha(t){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function download(name,text,type){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+
+function render(){
+  const c=D.codes, n=s=>c.filter(x=>x.status===s).length;
+  $("stats").innerHTML=[["전체",c.length],["미발급",n("new")],["발급",n("sent")],["사용 중지",n("off")]]
+    .map(([l,v])=>`<div class="stat"><small>${l}</small><b>${v}</b></div>`).join("");
+  $("dirty").hidden=!D.dirty;
+  const q=$("q").value.trim().toUpperCase();
+  const list=c.filter(x=>!q||x.code.includes(q.replace(/-/g,""))||(x.memo||"").toUpperCase().includes(q));
+  const ST={new:'<span class="st new">미발급</span>',sent:'<span class="st sent">발급</span>',off:'<span class="st off">사용 중지</span>'};
+  $("rows").innerHTML=list.length?list.map(x=>`
+    <tr class="${x.status}" data-c="${x.code}">
+      <td class="code">${fmt(x.code)}</td>
+      <td>${ST[x.status]}</td>
+      <td><input class="memo" value="${esc(x.memo||"")}" placeholder="구매자 이름·연락처" aria-label="${fmt(x.code)} 메모"></td>
+      <td class="date">${x.sentAt||""}</td>
+      <td><div class="acts">
+        <button class="btn sm" data-a="copy">복사</button>
+        ${x.status==="new"?'<button class="btn sm" data-a="send">발급 표시</button>':""}
+        ${x.status==="off"?'<button class="btn sm" data-a="on">되살리기</button>':'<button class="btn sm" data-a="off">사용 중지</button>'}
+      </div></td>
+    </tr>`).join(""):`<tr><td colspan="5" class="empty">${c.length?"찾는 번호가 없어요.":"아직 만든 번호가 없어요. 위에서 번호를 만들어 주세요."}</td></tr>`;
+}
+$("rows").addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]"); if(!b) return;
+  const x=D.codes.find(r=>r.code===b.closest("tr").dataset.c); if(!x) return;
+  if(b.dataset.a==="copy") copy(fmt(x.code));
+  if(b.dataset.a==="send"){ x.status="sent"; x.sentAt=today(); }
+  if(b.dataset.a==="off"){ x.status="off"; D.dirty=true; }
+  if(b.dataset.a==="on"){ x.status=x.sentAt?"sent":"new"; D.dirty=true; }
+  save(); render();
+});
+$("rows").addEventListener("change",e=>{
+  if(!e.target.classList.contains("memo")) return;
+  const x=D.codes.find(r=>r.code===e.target.closest("tr").dataset.c); if(x){ x.memo=e.target.value.trim(); save(); }
+});
+$("q").addEventListener("input",render);
+$("gen").onclick=()=>{
+  const k=Math.max(1,Math.min(500,parseInt($("count").value,10)||0)), have=new Set(D.codes.map(x=>x.code));
+  let made=0; while(made<k){ const c=rand8(); if(have.has(c)) continue; have.add(c); D.codes.push({code:c,status:"new",memo:"",created:today()}); made++; }
+  D.dirty=true; save(); render(); toast(`번호 ${k}개를 만들었어요. 번호 목록 파일을 저장해 올려 주세요.`);
+};
+$("nextCopy").onclick=()=>{
+  const x=D.codes.find(r=>r.status==="new");
+  if(!x){ toast("미발급 번호가 없어요. 번호를 더 만들어 주세요."); return; }
+  x.status="sent"; x.sentAt=today(); save(); $("q").value=""; render(); copy(fmt(x.code));
+  const input=document.querySelector(`tr[data-c="${x.code}"] .memo`); if(input){ input.focus(); input.scrollIntoView({block:"center"}); }
+};
+$("saveCodes").onclick=async()=>{
+  const live=D.codes.filter(x=>x.status!=="off");
+  const hs=[]; for(const x of live) hs.push(await sha(SALT+x.code));
+  download("codes.json",JSON.stringify({note:"회원 번호 해시 목록. 관리 화면에서 만든 파일입니다.",codes:hs},null,2),"application/json");
+  D.dirty=false; save(); render(); toast("codes.json을 저장했어요. 깃허브 data 폴더에 올려 주세요.");
+};
+$("saveCsv").onclick=()=>{
+  const rows=[["code","status","memo","created","sentAt"],...D.codes.map(x=>[fmt(x.code),x.status,x.memo||"",x.created||"",x.sentAt||""])];
+  const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  download(`회원번호-백업-${today()}.csv`,csv,"text/csv"); toast("백업을 저장했어요. 공개 저장소에는 올리지 마세요.");
+};
+$("loadCsvBtn").onclick=()=>$("loadCsv").click();
+$("loadCsv").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const text=(await f.text()).replace(/^﻿/,"");
+  const lines=text.split(/\r?\n/).filter(Boolean).slice(1);
+  const parse=l=>{ const out=[]; let cur="",q=false; for(let i=0;i<l.length;i++){ const ch=l[i];
+    if(q){ if(ch==='"'&&l[i+1]==='"'){cur+='"';i++;} else if(ch==='"') q=false; else cur+=ch; }
+    else if(ch==='"') q=true; else if(ch===','){ out.push(cur); cur=""; } else cur+=ch; } out.push(cur); return out; };
+  const have=new Map(D.codes.map(x=>[x.code,x])); let added=0;
+  for(const l of lines){ const [code,status,memo,created,sentAt]=parse(l); const c=(code||"").replace(/[^A-Z0-9]/gi,"").toUpperCase();
+    if(c.length!==8) continue; const rec={code:c,status:["new","sent","off"].includes(status)?status:"new",memo:memo||"",created:created||"",sentAt:sentAt||""};
+    if(have.has(c)) Object.assign(have.get(c),rec); else { D.codes.push(rec); added++; } }
+  D.dirty=true; save(); render(); e.target.value=""; toast(`백업을 불러왔어요. 새 번호 ${added}개`);
+};
+render();
+</script>
+</body>
+</html>

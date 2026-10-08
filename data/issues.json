@@ -1,0 +1,36 @@
+{
+  "thisWeek": "2026-iss-progress",
+  "free": [
+    "2026-10-07-bukang",
+    "2026-worldmap"
+  ],
+  "issues": [
+    {
+      "id": "2026-iss-progress",
+      "title": "딩동! 우주정거장에 특별한 택배가 왔어요!",
+      "shortTitle": "프로그레스",
+      "keyword": "국제우주정거장(ISS)",
+      "color": "sky",
+      "image": "img/2026-iss-progress.jpg",
+      "file": "data/issues/2026-iss-progress.json"
+    },
+    {
+      "id": "2026-10-07-bukang",
+      "title": "무서운 상어 '부캉이'가 일약 스타가 된 이유",
+      "shortTitle": "부캉이",
+      "keyword": "흑상어",
+      "color": "mint",
+      "image": "img/2026-10-07-bukang.jpg",
+      "file": "data/issues/2026-10-07-bukang.json"
+    },
+    {
+      "id": "2026-worldmap",
+      "title": "세계지도에서 아프리카가 커진다",
+      "shortTitle": "세계지도",
+      "keyword": "세계지도",
+      "color": "peach",
+      "image": "img/2026-worldmap.jpg",
+      "file": "data/issues/2026-worldmap.json"
+    }
+  ]
+}
